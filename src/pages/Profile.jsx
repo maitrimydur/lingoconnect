@@ -1,31 +1,47 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { LANGUAGES } from '../data/languages'
+import { DEFAULT_PROFILE, getProfile, saveProfile } from '../lib/profileStore'
 import { BackIcon } from '../components/icons'
 
-function storageKey(userId) {
-  return `lingoconnect:profile:${userId ?? 'guest'}`
-}
+const PRONOUN_OPTIONS = ['She/Her', 'He/Him', 'They/Them', 'Prefer not to say', 'Other']
+const GENDER_OPTIONS = ['Female', 'Male', 'Non-binary', 'Prefer not to say', 'Other']
 
-const DEFAULT_PROFILE = {
-  name: '',
-  username: '',
-  pronouns: '',
-  gender: '',
-  phone: '',
-  nativeLanguages: [],
+const MAX_AVATAR_SIZE = 200
+
+function resizeImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(reader.error)
+    reader.onload = () => {
+      const img = new Image()
+      img.onerror = reject
+      img.onload = () => {
+        const scale = Math.min(1, MAX_AVATAR_SIZE / Math.max(img.width, img.height))
+        const width = Math.round(img.width * scale)
+        const height = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.src = reader.result
+    }
+    reader.readAsDataURL(file)
+  })
 }
 
 export default function Profile() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const fileInputRef = useRef(null)
   const [profile, setProfile] = useState(DEFAULT_PROFILE)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    const raw = localStorage.getItem(storageKey(user?.id))
-    if (raw) setProfile({ ...DEFAULT_PROFILE, ...JSON.parse(raw) })
+    setProfile(getProfile(user?.id))
   }, [user?.id])
 
   function update(field, value) {
@@ -43,8 +59,15 @@ export default function Profile() {
     }))
   }
 
+  async function handleAvatarChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const dataUrl = await resizeImageFile(file)
+    update('avatarUrl', dataUrl)
+  }
+
   function handleSave() {
-    localStorage.setItem(storageKey(user?.id), JSON.stringify(profile))
+    saveProfile(user?.id, profile)
     setSaved(true)
   }
 
@@ -59,17 +82,44 @@ export default function Profile() {
       </button>
 
       <div className="flex flex-col items-center mb-6">
-        <div className="w-20 h-20 rounded-full bg-slate-900 text-white flex items-center justify-center text-2xl font-semibold">
-          {(profile.name || user?.email || '?').charAt(0).toUpperCase()}
-        </div>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="relative w-20 h-20 rounded-full overflow-hidden bg-slate-900 text-white flex items-center justify-center text-2xl font-semibold"
+          aria-label="Change profile photo"
+        >
+          {profile.avatarUrl ? (
+            <img src={profile.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            (profile.name || user?.email || '?').charAt(0).toUpperCase()
+          )}
+          <span className="absolute inset-x-0 bottom-0 bg-black/50 text-[10px] py-0.5">Edit</span>
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleAvatarChange}
+          className="hidden"
+        />
         <h1 className="text-xl font-bold text-slate-900 mt-3">Edit Profile</h1>
       </div>
 
       <div className="flex flex-col gap-4">
         <Field label="Name" value={profile.name} onChange={(v) => update('name', v)} />
         <Field label="Username" value={profile.username} onChange={(v) => update('username', v)} />
-        <Field label="Pronouns" value={profile.pronouns} onChange={(v) => update('pronouns', v)} />
-        <Field label="Gender" value={profile.gender} onChange={(v) => update('gender', v)} />
+        <SelectField
+          label="Pronouns"
+          value={profile.pronouns}
+          options={PRONOUN_OPTIONS}
+          onChange={(v) => update('pronouns', v)}
+        />
+        <SelectField
+          label="Gender"
+          value={profile.gender}
+          options={GENDER_OPTIONS}
+          onChange={(v) => update('gender', v)}
+        />
 
         <div className="mt-2">
           <p className="text-sm font-semibold text-slate-900 mb-2">Contact</p>
@@ -123,6 +173,26 @@ function Field({ label, value, onChange, disabled, placeholder }) {
         onChange={(e) => onChange?.(e.target.value)}
         className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
       />
+    </label>
+  )
+}
+
+function SelectField({ label, value, options, onChange }) {
+  return (
+    <label className="block">
+      <span className="text-xs text-slate-500">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
+        className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+      >
+        <option value="">Select…</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
     </label>
   )
 }

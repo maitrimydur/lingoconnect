@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { LANGUAGES } from '../data/languages'
 import { getCurriculum } from '../data/curriculum'
 import { getProgress } from '../lib/progressStore'
+import { getProfile } from '../lib/profileStore'
 import BottomNav from '../components/BottomNav'
 
 function nextStepFor(languageId, progress) {
@@ -17,10 +18,12 @@ export default function Home() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [progress, setProgress] = useState({})
+  const [profile, setProfile] = useState(null)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
     getProgress(user?.id).then(setProgress)
+    setProfile(getProfile(user?.id))
   }, [user?.id])
 
   function openLanguage(languageId) {
@@ -32,7 +35,7 @@ export default function Home() {
     }
   }
 
-  const displayName = user?.email?.split('@')[0] ?? 'friend'
+  const displayName = profile?.name || user?.email?.split('@')[0] || 'friend'
   const filtered = LANGUAGES.filter((lang) =>
     lang.name.toLowerCase().includes(search.toLowerCase())
   )
@@ -47,9 +50,13 @@ export default function Home() {
           </div>
           <Link
             to="/profile"
-            className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-medium"
+            className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-medium overflow-hidden"
           >
-            {displayName.charAt(0).toUpperCase()}
+            {profile?.avatarUrl ? (
+              <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              displayName.charAt(0).toUpperCase()
+            )}
           </Link>
         </div>
 

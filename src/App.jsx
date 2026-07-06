@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Welcome from './pages/Welcome'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import Consent from './pages/Consent'
 import Home from './pages/Home'
 import Videos from './pages/Videos'
 import About from './pages/About'
@@ -19,6 +20,14 @@ export default function App() {
         <Route path="/" element={<Welcome />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/consent"
+          element={
+            <ProtectedRoute requireConsent={false}>
+              <Consent />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/home"
           element={

@@ -8,6 +8,7 @@ import LessonHeader from '../components/LessonHeader'
 import VideoCard from '../components/VideoCard'
 import QuizCard from '../components/QuizCard'
 import ProgressBar from '../components/ProgressBar'
+import BottomNav from '../components/BottomNav'
 
 export default function Lesson() {
   const { langId, step } = useParams()
@@ -47,28 +48,31 @@ export default function Lesson() {
   }
 
   return (
-    <div className="min-h-svh px-6 py-8 max-w-sm mx-auto w-full flex flex-col">
-      <LessonHeader language={language} />
+    <div className="min-h-svh flex flex-col">
+      <div className="flex-1 px-6 py-8 max-w-sm mx-auto w-full flex flex-col">
+        <LessonHeader language={language} />
 
-      {lesson.type === 'video' && (
-        <h2 className="text-lg font-bold text-slate-900 mb-3">Day {lesson.day}: Video</h2>
-      )}
+        {lesson.type === 'video' && (
+          <h2 className="text-lg font-bold text-slate-900 mb-3">Day {lesson.day}: Video</h2>
+        )}
 
-      {lesson.type === 'video' ? (
-        <VideoCard lesson={lesson} />
-      ) : (
-        <QuizCard lesson={lesson} onSubmit={() => setReady(true)} />
-      )}
+        {lesson.type === 'video' ? (
+          <VideoCard lesson={lesson} />
+        ) : (
+          <QuizCard lesson={lesson} onSubmit={() => setReady(true)} />
+        )}
 
-      <button
-        onClick={handleNext}
-        disabled={!ready || saving}
-        className="mt-8 w-full bg-slate-900 text-white rounded-full py-3 font-medium disabled:opacity-40"
-      >
-        {saving ? 'Saving…' : 'Next'}
-      </button>
+        <button
+          onClick={handleNext}
+          disabled={!ready || saving}
+          className="mt-8 w-full bg-slate-900 text-white rounded-full py-3 font-medium disabled:opacity-40"
+        >
+          {saving ? 'Saving…' : 'Next'}
+        </button>
 
-      <ProgressBar percent={percent} />
+        <ProgressBar percent={percent} />
+      </div>
+      <BottomNav />
     </div>
   )
 }

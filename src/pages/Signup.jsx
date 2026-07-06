@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Signup() {
   const { signUp } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -14,10 +15,14 @@ export default function Signup() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const { error } = await signUp(email, password)
+    const { data, error } = await signUp(email, password)
     setLoading(false)
     if (error) {
       setError(error.message)
+      return
+    }
+    if (data.session) {
+      navigate('/home')
       return
     }
     setConfirmSent(true)
