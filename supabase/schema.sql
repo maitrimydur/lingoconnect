@@ -11,6 +11,13 @@ create table if not exists progress (
 
 alter table progress enable row level security;
 
+-- Needed if the project was created with "Automatically expose new tables"
+-- turned off: the Data API only serves tables the anon/authenticated roles
+-- have been explicitly granted access to. RLS policies below still govern
+-- which *rows* each user can see, regardless of this grant.
+grant usage on schema public to anon, authenticated;
+grant select, insert, update on progress to authenticated;
+
 create policy "Users can read own progress"
   on progress for select
   using (auth.uid() = user_id);
